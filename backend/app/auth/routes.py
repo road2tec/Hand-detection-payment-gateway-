@@ -1,0 +1,116 @@
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi.security import OAuth2PasswordRequestForm
+from backend.app.database.mongo import get_db
+from backend.app.models.user_model import UserCreate, UserResponse, UserInDB
+from backend.app.utils.security import get_password_hash, verify_password, create_access_token
+from backend.app.biometric.hand_detector import HandDetector
+from backend.app.biometric.feature_extractor import FeatureExtractor
+import numpy as np
+import cv2
+from bson import ObjectId
+from datetime import datetime
+
+router = APIRouter(prefix="/auth", tags=["auth"])
+detector = HandDetector(mode=True)
+
+@router.post("/secure-register")
+async def secure_register(
+    name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    images: list[UploadFile] = File(...),
+    db = Depends(get_db)
+):
+    try:
+        # 1. Check if user exists
+        existing_user = await db.users.find_one({"email": email})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        # 2. Extract Biometric Features FIRST (Validate before creating user)
+        if len(images) < 5:
+            raise HTTPException(status_code=400, detail="Minimum 5 hand images required for high-security enrollment")
+            
+        feature_vectors = []
+        hand_types = [] # To store hand types for consistency check
+        for image in images:
+            contents = await image.read()
+            nparr = np.frombuffer(contents, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            if img is None: continue
+            
+            detector.find_hands(img)
+            landmarks, h_type = detector.find_position(img) # Unpack landmarks and hand_type
+            
+            if landmarks and h_type: # Ensure both landmarks and hand_type are found
+                features = FeatureExtractor.extract_features(landmarks)
+                if features:
+                    feature_vectors.append(features)
+                    hand_types.append(h_type)
+                
+        if len(feature_vectors) < 5:
+            raise HTTPException(status_code=422, detail="Could not extract 5 unique hand samples. Please ensure hand is clear and centered.")
+
+        # Ensure all samples are of the same hand type
+        if len(set(hand_types)) > 1:
+            raise HTTPException(status_code=400, detail="Inconsistent hand types detected. Please use ONLY one hand (Left or Right) for all 5 samples.")
+
+        # 3. Create User
+        user_dict = {
+            "name": name,
+            "email": email,
+            "password_hash": get_password_hash(password),
+            "created_at": datetime.utcnow()
+        }
+        
+        result = await db.users.insert_one(user_dict)
+        user_id = str(result.inserted_id)
+        
+        # 4. Store Biometrics linked to this User ID
+        await db.biometrics.insert_one({
+            "user_id": user_id,
+            "feature_vectors": feature_vectors,
+            "hand_type": hand_types[0], # Store the locked hand type
+            "created_at": datetime.utcnow()
+        })
+        
+        return {"message": "User and biometrics registered successfully", "user_id": user_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Secure Registration Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+@router.post("/register", response_model=UserResponse)
+async def register(user_in: UserCreate, db = Depends(get_db)):
+    try:
+        existing_user = await db.users.find_one({"email": user_in.email})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        user_dict = user_in.model_dump() # Pydantic V2
+        password = user_dict.pop("password")
+        user_dict["password_hash"] = get_password_hash(password)
+        user_dict["created_at"] = datetime.utcnow()
+        
+        result = await db.users.insert_one(user_dict)
+        user_dict["id"] = str(result.inserted_id)
+        return user_dict
+    except Exception as e:
+        print(f"Registration Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+@router.post("/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db = Depends(get_db)):
+    user = await db.users.find_one({"email": form_data.username})
+    if not user or not verify_password(form_data.password, user["password_hash"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token = create_access_token(data={"sub": user["email"]})
+    return {"access_token": access_token, "token_type": "bearer", "user": {"id": str(user["_id"]), "name": user["name"], "email": user["email"]}}

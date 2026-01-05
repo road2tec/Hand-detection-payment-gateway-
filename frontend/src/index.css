@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #6366f1;
+  --color-primary-dark: #4f46e5;
+  --color-secondary: #ec4899;
+  --color-secondary-dark: #db2777;
+  --color-dark-lighter: #1e293b;
+  --color-dark: #0f172a;
+  --color-dark-darker: #020617;
+
+  --background-image-gradient-radial: radial-gradient(var(--tw-gradient-stops));
+  --background-image-fintech-gradient: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+
+  --shadow-premium: 0 0 30px -5px rgba(99, 102, 241, 0.4);
+  --shadow-premium-hover: 0 0 40px -5px rgba(99, 102, 241, 0.6);
+}
+
+@layer base {
+  body {
+    @apply bg-dark-darker text-white font-sans selection:bg-primary/30;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl;
+  }
+
+  .text-gradient {
+    @apply bg-fintech-gradient bg-clip-text text-transparent;
+  }
+
+  .glass-button {
+    @apply bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 px-8 py-3 rounded-2xl transition-all duration-500 hover:border-white/20;
+  }
+
+  .gradient-button {
+    @apply bg-fintech-gradient hover:brightness-110 text-white font-bold px-8 py-4 rounded-2xl transition-all duration-500 shadow-premium hover:shadow-premium-hover active:scale-95;
+  }
+}
