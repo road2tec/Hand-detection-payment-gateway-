@@ -1,12 +1,15 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CreditCard, ShieldCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
-import HandCapture from './HandCapture';
+import AutoHandCapture from './AutoHandCapture';
 import { useState } from 'react';
 import { biometricService, paymentService } from '../services/api';
 import Loader from './Loader';
 const PaymentModal = ({ isOpen, onClose, amount, onSuccess }) => {
-    const [step, setStep] = useState('initial'); // initial, biometrics, verifying, success, error
+    const [step, setStep] = useState('initial'); // initial, biometrics, verifying, otp, success, error
     const [error, setError] = useState(null);
+    const [otp, setOtp] = useState('');
+    const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
+    const [lastImage, setLastImage] = useState(null);
 
     const handleStartVerificaton = () => {
         setStep('biometrics');
@@ -40,9 +43,16 @@ const PaymentModal = ({ isOpen, onClose, amount, onSuccess }) => {
             const formData = new FormData();
             formData.append('image', decodeBase64Image(images[0]), 'hand.jpg');
             formData.append('amount', amount);
+            setLastImage(images[0]);
 
             // Atomic Secure Gate: Verify Biometric AND Create Order in one request
             const orderRes = await paymentService.createOrder(formData);
+
+            if (orderRes.data.otp_required) {
+                setStep('otp');
+                return;
+            }
+
             const { order_id, key_id, currency } = orderRes.data;
 
             // Load Razorpay and Open Checkout
@@ -108,6 +118,26 @@ const PaymentModal = ({ isOpen, onClose, amount, onSuccess }) => {
         }
     };
 
+    const handleOTPVerify = async (e) => {
+        e.preventDefault();
+        setIsVerifyingOTP(true);
+        setError(null);
+        try {
+            await paymentService.verifyOTP({
+                otp,
+                amount
+            });
+            // After successful OTP verification, re-trigger capture complete with stored image
+            if (lastImage) {
+                handleCaptureComplete([lastImage]);
+            }
+        } catch (err) {
+            setError(err.response?.data?.detail || "OTP verification failed.");
+        } finally {
+            setIsVerifyingOTP(false);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -140,7 +170,12 @@ const PaymentModal = ({ isOpen, onClose, amount, onSuccess }) => {
                         )}
 
                         {step === 'biometrics' && (
-                            <HandCapture onCapture={handleCaptureComplete} title="Scan Hand to Verify" />
+                            <AutoHandCapture
+                                requiredCount={1}
+                                autoStart={true}
+                                onCapture={handleCaptureComplete}
+                                title="Scan Hand to Verify"
+                            />
                         )}
 
                         {step === 'verifying' && (
@@ -150,6 +185,72 @@ const PaymentModal = ({ isOpen, onClose, amount, onSuccess }) => {
                             </div>
                         )}
 
+                        {step === 'otp' && (
+                            <div className="text-center w-full max-w-sm px-4">
+                                <motion.div
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    className="mb-8"
+                                >
+                                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-primary/20">
+                                        <ShieldCheck size={40} className="text-primary" />
+                                    </div>
+                                    <h3 className="text-2xl font-black mb-2 uppercase tracking-tighter italic">OTP Verification</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed">
+                                        A 6-digit code has been sent to your registered email to secure this high-value transaction.
+                                    </p>
+                                </motion.div>
+
+                                <form onSubmit={handleOTPVerify} className="space-y-6">
+                                    <div className="relative group">
+                                        <input
+                                            type="text"
+                                            maxLength="6"
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                            placeholder="Enter 6-digit OTP"
+                                            className="w-full bg-dark/50 border-2 border-white/5 rounded-2xl py-6 text-center text-3xl font-black tracking-[0.5em] text-primary focus:border-primary outline-none transition-all placeholder:text-dark-lighter placeholder:tracking-normal placeholder:text-lg"
+                                            autoFocus
+                                        />
+                                        <div className="absolute inset-0 rounded-2xl bg-primary/5 -z-10 blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
+                                    </div>
+
+                                    {error && (
+                                        <motion.div
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            className="flex items-center gap-2 text-red-500 bg-red-500/10 p-4 rounded-xl border border-red-500/20 text-sm font-bold"
+                                        >
+                                            <AlertCircle size={16} />
+                                            {error}
+                                        </motion.div>
+                                    )}
+
+                                    <div className="pt-2">
+                                        <button
+                                            type="submit"
+                                            disabled={otp.length !== 6 || isVerifyingOTP}
+                                            className="gradient-button w-full py-5 rounded-2xl shadow-2xl shadow-primary/20 flex items-center justify-center gap-3"
+                                        >
+                                            {isVerifyingOTP ? (
+                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            ) : (
+                                                <ShieldCheck size={20} />
+                                            )}
+                                            <span className="font-black uppercase tracking-wider">Confirm Transaction</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setStep('initial')}
+                                            className="w-full mt-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors"
+                                        >
+                                            Cancel & Restart
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
 
                         {step === 'payment' && (
                             <div className="text-center">

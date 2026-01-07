@@ -23,6 +23,7 @@ const Dashboard = () => {
     const [stats, setStats] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(new Date());
+    const [customAmount, setCustomAmount] = useState('');
 
     const fetchData = useCallback(async (isInitial = false) => {
         if (isInitial) setIsLoading(true);
@@ -148,6 +149,28 @@ const Dashboard = () => {
                                         <div className="absolute bottom-0 left-0 h-1 bg-primary w-0 group-hover/btn:w-full transition-all duration-300" />
                                     </motion.button>
                                 ))}
+
+                                {/* Custom Amount Card */}
+                                <div className="p-6 bg-white/5 border border-dashed border-white/20 rounded-3xl hover:bg-white/10 transition-all text-center flex flex-col justify-center gap-2 group/custom">
+                                    <p className="text-[10px] text-gray-500 font-black mb-1 uppercase tracking-tighter opacity-70">Custom Amount</p>
+                                    <div className="relative">
+                                        <span className="absolute left-1 top-1/2 -translate-y-1/2 text-primary font-black">₹</span>
+                                        <input
+                                            type="number"
+                                            value={customAmount}
+                                            onChange={(e) => setCustomAmount(e.target.value)}
+                                            placeholder="0.00"
+                                            className="w-full bg-dark/40 border border-white/10 rounded-xl py-2 pl-6 pr-2 text-sm font-black text-white focus:border-primary outline-none transition-all"
+                                        />
+                                    </div>
+                                    <button
+                                        disabled={!customAmount || parseFloat(customAmount) <= 0}
+                                        onClick={() => handlePayClick(parseFloat(customAmount))}
+                                        className="w-full py-2 bg-primary text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Plus size={14} /> Pay Custom
+                                    </button>
+                                </div>
                             </div>
                         </section>
 

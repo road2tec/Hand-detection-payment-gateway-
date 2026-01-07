@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Fingerprint, ShieldCheck, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { biometricService } from '../services/api';
-import HandCapture from '../components/HandCapture';
+import AutoHandCapture from '../components/AutoHandCapture';
 import Loader from '../components/Loader';
 
 const UpdateBiometrics = () => {
@@ -90,7 +90,7 @@ const UpdateBiometrics = () => {
                             </div>
                         </div>
 
-                        <HandCapture
+                        <AutoHandCapture
                             requiredCount={5}
                             onCapture={handleUpdate}
                             title="Enroll Your 5 Signature Samples"

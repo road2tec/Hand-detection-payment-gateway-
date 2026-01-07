@@ -14,8 +14,8 @@ class HandDetector:
         options = vision.HandLandmarkerOptions(
             base_options=base_options,
             num_hands=max_hands,
-            min_hand_detection_confidence=0.4,
-            min_hand_presence_confidence=0.4,
+            min_hand_detection_confidence=0.3,
+            min_hand_presence_confidence=0.3,
             min_tracking_confidence=track_con
         )
         self.detector = vision.HandLandmarker.create_from_options(options)

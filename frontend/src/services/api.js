@@ -35,6 +35,7 @@ export const paymentService = {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
     verifyPayment: (data) => api.post('/payment/verify-payment', data),
+    verifyOTP: (data) => api.post('/payment/verify-otp', data),
 };
 
 export const dashboardService = {

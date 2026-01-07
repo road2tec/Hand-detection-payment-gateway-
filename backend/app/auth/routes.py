@@ -22,38 +22,53 @@ async def secure_register(
     db = Depends(get_db)
 ):
     try:
+        print(f"DEBUG: secure_register called for {email}. Images received: {len(images)}")
+        
         # 1. Check if user exists
         existing_user = await db.users.find_one({"email": email})
         if existing_user:
+            print(f"DEBUG: Email {email} already exists.")
             raise HTTPException(status_code=400, detail="Email already registered")
         
         # 2. Extract Biometric Features FIRST (Validate before creating user)
         if len(images) < 5:
+            print(f"DEBUG: Insufficient images. Got {len(images)}, need 5.")
             raise HTTPException(status_code=400, detail="Minimum 5 hand images required for high-security enrollment")
             
         feature_vectors = []
-        hand_types = [] # To store hand types for consistency check
-        for image in images:
+        hand_types = [] 
+        for i, image in enumerate(images):
             contents = await image.read()
             nparr = np.frombuffer(contents, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             
-            if img is None: continue
+            if img is None: 
+                print(f"DEBUG: Image {i} failed to decode.")
+                continue
             
             detector.find_hands(img)
-            landmarks, h_type = detector.find_position(img) # Unpack landmarks and hand_type
+            landmarks, h_type = detector.find_position(img) 
             
-            if landmarks and h_type: # Ensure both landmarks and hand_type are found
+            if landmarks and h_type: 
                 features = FeatureExtractor.extract_features(landmarks)
                 if features:
                     feature_vectors.append(features)
                     hand_types.append(h_type)
+                    print(f"DEBUG: Image {i} -> OK ({h_type})")
+                else:
+                    print(f"DEBUG: Image {i} -> Feature extraction failed.")
+            else:
+                print(f"DEBUG: Image {i} -> No hand/landmarks detected.")
                 
+        print(f"DEBUG: Final samples: {len(feature_vectors)}. Hand Types: {hand_types}")
+        
         if len(feature_vectors) < 5:
-            raise HTTPException(status_code=422, detail="Could not extract 5 unique hand samples. Please ensure hand is clear and centered.")
+            # Get specific counts for why it failed
+            raise HTTPException(status_code=422, detail=f"Extracted {len(feature_vectors)}/5 samples. Please ensure your hand is fully visible, fingers are spread, and lighting is good.")
 
         # Ensure all samples are of the same hand type
         if len(set(hand_types)) > 1:
+            print(f"DEBUG: Inconsistent hand types: {set(hand_types)}")
             raise HTTPException(status_code=400, detail="Inconsistent hand types detected. Please use ONLY one hand (Left or Right) for all 5 samples.")
 
         # 3. Create User

@@ -4,7 +4,7 @@ import { User, Mail, Lock, UserPlus, Fingerprint } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService, biometricService } from '../services/api';
 import { containerVariants, buttonVariants } from '../animations/motionVariants';
-import HandCapture from '../components/HandCapture';
+import AutoHandCapture from '../components/AutoHandCapture';
 import Loader from '../components/Loader';
 
 const Register = () => {
@@ -34,13 +34,16 @@ const Register = () => {
         setLoading(true);
         setError(null);
         try {
+            console.log(`🚀 Starting registration for ${formData.email} with ${images.length} images.`);
             const signupData = new FormData();
             signupData.append('name', formData.name);
             signupData.append('email', formData.email);
             signupData.append('password', formData.password);
 
             images.forEach((img, index) => {
-                signupData.append('images', decodeBase64Image(img), `hand_${index}.jpg`);
+                const blob = decodeBase64Image(img);
+                console.log(`📸 Image ${index} decoded. Size: ${blob.size} bytes`);
+                signupData.append('images', blob, `hand_${index}.jpg`);
             });
 
             // Unified registration
@@ -160,7 +163,7 @@ const Register = () => {
                                         <p className="text-primary font-medium">Securing Your Biometric Data...</p>
                                     </div>
                                 ) : (
-                                    <HandCapture
+                                    <AutoHandCapture
                                         requiredCount={5}
                                         onCapture={handleHandCapture}
                                         title="Register Hand Biometrics"
