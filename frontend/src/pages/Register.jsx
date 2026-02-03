@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Lock, UserPlus, Fingerprint } from 'lucide-react';
+import { User, Mail, Lock, UserPlus, Fingerprint, KeyRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService, biometricService } from '../services/api';
 import { containerVariants, buttonVariants } from '../animations/motionVariants';
@@ -9,7 +9,7 @@ import Loader from '../components/Loader';
 
 const Register = () => {
     const [step, setStep] = useState(1); // 1: Info, 2: Biometrics
-    const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', password: '', pin: '' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -39,6 +39,7 @@ const Register = () => {
             signupData.append('name', formData.name);
             signupData.append('email', formData.email);
             signupData.append('password', formData.password);
+            signupData.append('pin', formData.pin);
 
             images.forEach((img, index) => {
                 const blob = decodeBase64Image(img);
@@ -62,7 +63,12 @@ const Register = () => {
             navigate('/dashboard');
         } catch (err) {
             console.error("Unified Registration Error:", err);
-            setError(err.response?.data?.detail || "Registration failed. Please ensure hand is clear and try again.");
+            const detail = err.response?.data?.detail;
+            if (detail && typeof detail === 'object') {
+                setError(detail.message || detail.reason || JSON.stringify(detail));
+            } else {
+                setError(detail || "Registration failed. Please ensure hand is clear and try again.");
+            }
             setStep(1);
         } finally {
             setLoading(false);
@@ -134,6 +140,22 @@ const Register = () => {
                                             className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
                                             value={formData.password}
                                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-300 ml-1">Security PIN (4-6 digits)</label>
+                                    <div className="relative">
+                                        <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                        <input
+                                            type="text"
+                                            maxLength="6"
+                                            required
+                                            placeholder="1234"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+                                            value={formData.pin}
+                                            onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/\D/g, '') })}
                                         />
                                     </div>
                                 </div>

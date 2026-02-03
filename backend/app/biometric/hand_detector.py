@@ -69,3 +69,50 @@ class HandDetector:
             hand_label = detection_result.handedness[hand_no][0].category_name
             
         return lm_list, hand_label
+
+    def check_image_quality(self, img):
+        """
+        Analyze image for brightness and blur.
+        Returns: is_good (bool), issues (list)
+        """
+        issues = []
+        is_good = True
+        
+        if img is None:
+            return False, ["Image not found"]
+
+        # 1. Brightness Check
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        v_channel = hsv[:,:,2]
+        avg_brightness = np.mean(v_channel)
+        
+        if avg_brightness < 40:
+            is_good = False
+            issues.append("Lighting is too dark. Increase brightness.")
+        elif avg_brightness > 250:
+            is_good = False
+            issues.append("Too much glare. Avoid direct light.")
+            
+        # 2. Blur Check
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+        
+        if laplacian_var < 20: # Threshold for blur
+            is_good = False
+            issues.append("Image is blurry. Please hold steady.")
+
+        # 3. Hand Scale Check (Distance)
+        lm_list, _ = self.find_position(img)
+        if lm_list:
+            # Wrist (0) to Middle Finger Base (9)
+            wrist = lm_list[0]
+            mcp = lm_list[9]
+            dist = np.sqrt((wrist[0] - mcp[0])**2 + (wrist[1] - mcp[1])**2)
+            if dist < 0.18:
+                is_good = False
+                issues.append("Hand is too far. Bring it closer to the scanner.")
+            elif dist > 0.5:
+                is_good = False
+                issues.append("Hand is too close. Please move back slightly.")
+            
+        return is_good, issues

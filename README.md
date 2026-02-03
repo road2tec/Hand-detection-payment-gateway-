@@ -1,107 +1,106 @@
-# 🛡️ BiometricPay: Secure Hand Geometry Payment System
+# Secure Biometric Payment System (Hand Geometry & CNN Fusion)
 
-![Security V2](https://img.shields.io/badge/Security-V2.0-blueviolet?style=for-the-badge&logo=shield)
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python)
-![React](https://img.shields.io/badge/React-2024-61DAFB?style=for-the-badge&logo=react)
+## 🚀 Project Overview
+A production-grade biometric authentication system aimed at securing high-value transactions. This project implements a **Hybrid Scoring Engine** (Geometric + Deep Learning), **Risk-Based Multi-Factor Authentication (M MFA)**, and a **Military-Grade Audit Trail**.
 
-**BiometricPay** is a high-security biometric authentication and payment gateway that replaces traditional PINs and passwords with a "Digital Twin" of your hand. Using advanced computer vision and skeletal landmarking, it authorizes transactions only when your unique hand geometry is verified.
+It is designed to simulate a bank-grade environment where security scales with transaction risk, featuring a sleek, immersive "Command Interface" UI.
 
 ---
 
-## 🔥 Key Features
+## 🔑 Key Features
 
-- **Skeletal Mapping**: High-fidelity detection of 21 unique hand landmarks using MediaPipe.
-- **Triple-Gate Security**: Multi-layered verification process (Hand Type + Geometry + Variance).
-- **Zero-Trust Payment Flow**: Razorpay orders are only created *after* successful biometric validation.
-- **Premium Dashboard**: Real-time analytics, biometric telemetry, and interactive transaction history.
-- **Scale-Invariant Extraction**: Recognizes your hand regardless of distance or camera resolution.
-- **Anti-Spoofing Engine**: Statistical Z-Score analysis to detect and reject static image replicas.
+1.  **Hybrid Biometric Engine (Bio-Fuse Layer)**:
+    *   **Geometric Analysis (70%)**: Extracts 51-point skeletal vectors (finger lengths, joint ratios) using MediaPipe.
+    *   **Deep Feature Extraction (30%)**: Uses **MobileNetV2 (CNN)** to extract 1280-dimensional textural/spatial embeddings.
+    *   **Intelligent Diagnostics**: Provides real-time feedback (Lighting, Distance, Blur) to ensure high-fidelity scans.
+
+2.  **5-Step Secure Payment Wizard**:
+    *   **Step 1: Recipient Verification**: Validation of name, account number, and IFSC.
+    *   **Step 2: Value Definition**: Dynamic amount entry with tiered security alerts.
+    *   **Step 3: Protocol Review**: Immersive summary of the transaction commitment.
+    *   **Step 4: Biometric/OTP Auth**: Multi-layered authentication based on risk.
+    *   **Step 5: Digital Receipt**: Instant finalization with secure tracking IDs.
+
+3.  **Risk-Based Authentication (Dynamic Security)**:
+    *   **Tier 1 (< ₹2,000)**: Biometric Only (Fast Path).
+    *   **Tier 2 (₹2,000 - ₹10,000)**: Biometric + **PIN Verification**.
+    *   **Tier 3 (> ₹10,000)**: Biometric + **Email OTP** (Maximum Security).
+
+4.  **Bank-Grade Security & Privacy**:
+    *   **Data Masking**: Strict masking of bank accounts and emails (e.g., ****4455) for all administrative views.
+    *   **AES-256 Encryption**: Biometric templates are encrypted at rest.
+    *   **Argon2 Hashing**: Passwords and PINs use memory-hard hashing.
+
+5.  **Admin Command Center**:
+    *   **Live Transaction Monitor**: Real-time audit of all successful and filtered attempts.
+    *   **Biometric Pulse**: Visual metrics for matching accuracy and incident rates.
+    *   **Identity Registry**: Management of verified biometric nodes.
 
 ---
 
 ## 🛠️ Technology Stack
-
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | React, Tailwind CSS, Framer Motion, Lucide Icons |
-| **Backend** | FastAPI (High-Performance Async), JWT, Python |
-| **Biometric Engine** | MediaPipe, OpenCV, NumPy |
-| **AI/Similarity** | Scikit-learn (Cosine Similarity), Z-Score Variance |
-| **Database** | MongoDB Atlas (NoSQL) |
-| **Payments** | Razorpay Gateway |
+*   **Frontend**: React.js, TailwindCSS (Vanilla Custom Tokens), Framer Motion (3D HUD), Electron.
+*   **Backend**: FastAPI (Python), MongoDB (Motor Async), MediaPipe, PyTorch (CNN Extraction).
+*   **Integration**: Razorpay (Payment Gateway), Gmail SMTP (Secure OTP Transmission).
 
 ---
 
-## 🚀 Setup & Installation
+## ⚙️ Setup Instructions
 
-### 1. Backend Configuration
+### 1. Backend Setup
 ```bash
-# Clone and navigate
 cd backend
-
-# Create & activate environment
 python -m venv venv
-venv\Scripts\activate  # Windows
-
-# Install core dependencies
+# Activate venv: venv\Scripts\activate (Windows)
 pip install -r requirements.txt
-
-# Run server from PROJECT ROOT
-cd ..
-python -m uvicorn backend.app.main:app --reload
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 ```
 
-### 2. Frontend Configuration
+**Environment Variables (.env)**:
+```env
+MONGODB_URL=mongodb://localhost:27017
+SECRET_KEY=your_super_secret_key_change_this
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
+RAZORPAY_KEY_ID=your_key
+RAZORPAY_KEY_SECRET=your_secret
+```
+
+**Run Server**:
+```bash
+uvicorn app.main:app --reload
+```
+
+### 2. Frontend Setup
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### 3. Environment Variables (`.env`)
-Create a `.env` file in the root with:
-```env
-MONGODB_URL=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
-RAZORPAY_KEY_ID=your_key_id
-RAZORPAY_KEY_SECRET=your_key_secret
-```
+---
+
+## 🎓 Viva Questions & Explanations
+
+### Q1: Why did you implement a Multi-Step Wizard?
+**Answer**: In high-security banking systems, context is key. A wizard-based approach ensures that users verify the recipient *before* exposing their biometric data. It prevents "accidental" payments and builds trust by showing exactly what is being authorized at each step.
+
+### Q2: How does the system handle Privacy (Data Masking)?
+**Answer**: To comply with financial regulations (like GDPR/PCI-DSS), sensitive data like full account numbers are never displayed. We use a masking utility that redacts everything except the last 4 digits. Even the Admin can only see masked data to prevent internal fraud.
+
+### Q3: What is "Hand Scale" validation?
+**Answer**: Our system measures the distance between the wrist and fingers in normalized units. If the hand is too far or too close, the "Hand Size" logic rejects the frame. This ensures the biometric features are extracted at a consistent resolution, significantly reducing "False Rejection" rates.
+
+### Q4: Why use a 3D Biometric HUD?
+**Answer**: The 3D HUD (Heads-Up Display) in the dashboard isn't just aesthetic. It visualizes the biometric scanning process, giving the user confidence that the "Neural Engine" is actively analyzing their skeletal structure. It creates a premium, high-tech experience suitable for a production-grade system.
 
 ---
 
-## 🔐 Advanced Security Logic
-
-The engine uses a **Triple-Gate** check for every transaction:
-
-1.  **Gate 0 (Hand Verification)**: Identifies if you are using your registered Left or Right hand.
-2.  **Gate 1 (Similarity)**: Uses Cosine Similarity to compare your live 51-dimension vector against your 5 enrolled templates (Requires >94% match).
-3.  **Gate 2 (Variance)**: Measures the statistical deviation of your hand landmarks to ensure a "living" human match (Z-Score < 1.8).
-
----
-
-## 📂 Project Organization
-
-```text
-├── backend/
-│   ├── app/                # Core logic (Auth, Biometric, Payment)
-│   └── scripts/            # 🛠️ Maintenance & Audit Tools
-├── frontend/
-│   ├── src/
-│   │   ├── components/     # UI Components (PaymentModal, HandCapture)
-│   │   ├── pages/          # Dashboard, Landing, Register
-│   │   └── services/       # API Integration
-├── .gitignore              # Protected environment secrets
-└── README.md               # You are here
-```
-
----
-
-## 🛠️ Maintenance Tools
-We've included a suite of tools for system administrators:
-- `python backend/scripts/check_logs.py`: View security audit telemetry.
-- `python backend/scripts/check_db_state.py`: Audit user and biometric counts.
-- `python backend/scripts/clear_database.py`: Safe utility to reset user data.
-
----
-
-**Developed with ❤️ for Advanced Secure Payments.**
+## 📂 Project Structure
+*   `backend/app/biometric`: Neural Core (Detector, Extractor, Matcher).
+*   `backend/app/payment`: Financial Logic, Tiered MFA, and Razorpay Sync.
+*   `backend/app/admin`: Security Monitoring and Masked Audit Routes.
+*   `frontend/src/components`: UI Elements (PaymentModal, AutoHandCapture).
+*   `frontend/src/pages`: Views (Immersive Dashboard, Admin Command Center).

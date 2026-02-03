@@ -36,6 +36,7 @@ export const paymentService = {
     }),
     verifyPayment: (data) => api.post('/payment/verify-payment', data),
     verifyOTP: (data) => api.post('/payment/verify-otp', data),
+    verifyPIN: (data) => api.post('/payment/verify-pin', data),
 };
 
 export const dashboardService = {
@@ -43,6 +44,14 @@ export const dashboardService = {
     getActivity: () => api.get('/dashboard/activity-feed'),
     getPayments: () => api.get('/dashboard/payments'),
     getBiometricStats: () => api.get('/dashboard/biometric-stats'),
+};
+
+export const adminService = {
+    getLogs: (status) => api.get(`/admin/logs${status ? `?status=${status}` : ''}`),
+    getStats: () => api.get('/admin/stats'),
+    getHealth: () => api.get('/admin/health'),
+    getUsers: () => api.get('/admin/users'),
+    getAlerts: () => api.get('/admin/alerts'),
 };
 
 export default api;

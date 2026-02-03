@@ -21,9 +21,15 @@ const Login = () => {
                 username: formData.email,
                 password: formData.password
             });
+            const user = response.data.user;
             localStorage.setItem('token', response.data.access_token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-            navigate('/dashboard');
+            localStorage.setItem('user', JSON.stringify(user));
+
+            if (user.is_admin) {
+                navigate('/admin');
+            } else {
+                navigate('/dashboard');
+            }
         } catch (err) {
             setError(err.response?.data?.detail || "Login failed. Please check your credentials.");
         } finally {

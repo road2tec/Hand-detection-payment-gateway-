@@ -5,15 +5,43 @@
   --color-primary-dark: #4f46e5;
   --color-secondary: #ec4899;
   --color-secondary-dark: #db2777;
-  --color-dark-lighter: #1e293b;
-  --color-dark: #0f172a;
-  --color-dark-darker: #020617;
+  --color-dark-lighter: #334155;
+  --color-dark: #1e293b;
+  --color-dark-darker: #0f172a;
 
   --background-image-gradient-radial: radial-gradient(var(--tw-gradient-stops));
   --background-image-fintech-gradient: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
 
-  --shadow-premium: 0 0 30px -5px rgba(99, 102, 241, 0.4);
-  --shadow-premium-hover: 0 0 40px -5px rgba(99, 102, 241, 0.6);
+  --shadow-premium: 0 20px 50px -12px rgba(99, 102, 241, 0.4);
+  --shadow-premium-hover: 0 30px 60px -12px rgba(99, 102, 241, 0.6);
+  --shadow-glass: inset 0 0 20px rgba(255, 255, 255, 0.05), 0 10px 30px rgba(0, 0, 0, 0.5);
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow: glow 4s ease-in-out infinite;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes glow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.5));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 25px rgba(99, 102, 241, 0.8));
+  }
 }
 
 @layer base {
@@ -24,11 +52,15 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl;
+    @apply bg-white/[0.04] backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-glass transition-all duration-700;
+  }
+
+  .glass-card-hover {
+    @apply hover:bg-white/[0.07] hover:border-white/20 hover:shadow-premium;
   }
 
   .text-gradient {
-    @apply bg-fintech-gradient bg-clip-text text-transparent;
+    @apply bg-fintech-gradient bg-clip-text text-transparent drop-shadow-sm;
   }
 
   .glass-button {

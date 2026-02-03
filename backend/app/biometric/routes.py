@@ -86,7 +86,7 @@ async def verify_hand(
         # 3. Detect Landmarks
         try:
             detector.find_hands(img)
-            landmarks = detector.find_position(img)
+            landmarks, h_type = detector.find_position(img)
         except Exception as e:
             print(f"DEBUG: Hand detector crash: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal hand detection error")

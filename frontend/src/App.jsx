@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import UpdateBiometrics from './pages/UpdateBiometrics';
+import AdminDashboard from './pages/AdminDashboard';
 
 import Landing from './pages/Landing';
 
@@ -25,6 +26,7 @@ const App = () => {
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/upgrade-biometrics" element={<UpdateBiometrics />} />
+              <Route path="/admin" element={<AdminDashboard />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

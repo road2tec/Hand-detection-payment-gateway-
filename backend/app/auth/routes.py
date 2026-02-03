@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from fastapi.security import OAuth2PasswordRequestForm
 from backend.app.database.mongo import get_db
 from backend.app.models.user_model import UserCreate, UserResponse, UserInDB
-from backend.app.utils.security import get_password_hash, verify_password, create_access_token
+from backend.app.utils.security import get_password_hash, verify_password, create_access_token, encrypt_template
 from backend.app.biometric.hand_detector import HandDetector
 from backend.app.biometric.feature_extractor import FeatureExtractor
 import numpy as np
@@ -12,12 +12,14 @@ from datetime import datetime
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 detector = HandDetector(mode=True)
+extractor = FeatureExtractor() # Initialize global instance (loads model)
 
 @router.post("/secure-register")
 async def secure_register(
     name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
+    pin: str = Form(...),
     images: list[UploadFile] = File(...),
     db = Depends(get_db)
 ):
@@ -36,6 +38,7 @@ async def secure_register(
             raise HTTPException(status_code=400, detail="Minimum 5 hand images required for high-security enrollment")
             
         feature_vectors = []
+        cnn_feature_vectors = []
         hand_types = [] 
         for i, image in enumerate(images):
             contents = await image.read()
@@ -45,16 +48,28 @@ async def secure_register(
             if img is None: 
                 print(f"DEBUG: Image {i} failed to decode.")
                 continue
+
+            # Quality Check
+            is_good, issues = detector.check_image_quality(img)
+            if not is_good:
+                print(f"DEBUG: Image {i} rejected due to quality: {issues}")
+                continue
             
             detector.find_hands(img)
             landmarks, h_type = detector.find_position(img) 
             
             if landmarks and h_type: 
+                # Geometric Features
                 features = FeatureExtractor.extract_features(landmarks)
-                if features:
+                
+                # CNN Features (Deep Feature Extraction)
+                cnn_feat = extractor.extract_cnn_features(img)
+                
+                if features and cnn_feat:
                     feature_vectors.append(features)
+                    cnn_feature_vectors.append(cnn_feat)
                     hand_types.append(h_type)
-                    print(f"DEBUG: Image {i} -> OK ({h_type})")
+                    print(f"DEBUG: Image {i} -> OK ({h_type}) | CNN: {len(cnn_feat)} dims")
                 else:
                     print(f"DEBUG: Image {i} -> Feature extraction failed.")
             else:
@@ -76,6 +91,7 @@ async def secure_register(
             "name": name,
             "email": email,
             "password_hash": get_password_hash(password),
+            "hashed_pin": get_password_hash(pin),
             "created_at": datetime.utcnow()
         }
         
@@ -85,8 +101,9 @@ async def secure_register(
         # 4. Store Biometrics linked to this User ID
         await db.biometrics.insert_one({
             "user_id": user_id,
-            "feature_vectors": feature_vectors,
-            "hand_type": hand_types[0], # Store the locked hand type
+            "feature_vectors": encrypt_template(feature_vectors), # AES-256 Encrypted
+            "cnn_features": encrypt_template(cnn_feature_vectors), # AES-256 Encrypted
+            "hand_type": hand_types[0],
             "created_at": datetime.utcnow()
         })
         
@@ -107,7 +124,10 @@ async def register(user_in: UserCreate, db = Depends(get_db)):
         
         user_dict = user_in.model_dump() # Pydantic V2
         password = user_dict.pop("password")
+        pin = user_dict.pop("pin", None)
         user_dict["password_hash"] = get_password_hash(password)
+        if pin:
+            user_dict["hashed_pin"] = get_password_hash(pin)
         user_dict["created_at"] = datetime.utcnow()
         
         result = await db.users.insert_one(user_dict)
@@ -128,4 +148,13 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db = Depends(g
         )
     
     access_token = create_access_token(data={"sub": user["email"]})
-    return {"access_token": access_token, "token_type": "bearer", "user": {"id": str(user["_id"]), "name": user["name"], "email": user["email"]}}
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer", 
+        "user": {
+            "id": str(user["_id"]), 
+            "name": user["name"], 
+            "email": user["email"],
+            "is_admin": user.get("is_admin", False)
+        }
+    }

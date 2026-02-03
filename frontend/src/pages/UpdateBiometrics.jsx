@@ -12,6 +12,17 @@ const UpdateBiometrics = () => {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            if (parsedUser.is_admin) {
+                navigate('/admin');
+                return;
+            }
+        }
+    }, [navigate]);
+
     const handleUpdate = async (images) => {
         setLoading(true);
         setError(null);

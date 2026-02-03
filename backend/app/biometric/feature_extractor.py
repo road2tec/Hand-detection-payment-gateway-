@@ -1,6 +1,24 @@
 import numpy as np
+import torch
+import torch.nn as nn
+from torchvision import models, transforms
+from PIL import Image
 
 class FeatureExtractor:
+    def __init__(self):
+        # Initialize MobileNetV2 for lightweight feature extraction
+        self.model = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.DEFAULT)
+        # Remove the last classification layer to get features
+        self.model.classifier = nn.Identity()
+        self.model.eval()
+        
+        self.preprocess = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+
     @staticmethod
     def calculate_distance(p1, p2):
         return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
@@ -15,6 +33,30 @@ class FeatureExtractor:
         if norm1 == 0 or norm2 == 0: return 0.0
         unit_v1, unit_v2 = v1 / norm1, v2 / norm2
         return float(np.arccos(np.clip(np.dot(unit_v1, unit_v2), -1.0, 1.0)))
+
+    def extract_cnn_features(self, image_np):
+        """
+        Extract deep features using MobileNetV2.
+        Input: Numpy image (BGR or RGB)
+        Output: 1280-D feature vector
+        """
+        try:
+            # Convert numpy image to PIL
+            if len(image_np.shape) == 3:
+                image_pil = Image.fromarray(image_np)
+            else:
+                return None
+                
+            input_tensor = self.preprocess(image_pil)
+            input_batch = input_tensor.unsqueeze(0)  # Create a mini-batch as expected by the model
+
+            with torch.no_grad():
+                features = self.model(input_batch)
+            
+            return features.numpy().flatten().tolist()
+        except Exception as e:
+            print(f"CNN Extraction Error: {e}")
+            return None
 
     @staticmethod
     def extract_features(landmarks):
