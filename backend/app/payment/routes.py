@@ -166,7 +166,7 @@ async def create_secure_order(
             await db.otps.insert_one({
                 "user_id": str(current_user["_id"]),
                 "hashed_otp": hashed_otp,
-                "amount": amount,
+                "amount": round(amount, 2),
                 "expires_at": expires_at,
                 "verified": False,
                 "used": False,
@@ -236,7 +236,7 @@ async def verify_otp(
     """
     otp_record = await db.otps.find_one({
         "user_id": str(current_user["_id"]),
-        "amount": request.amount,
+        "amount": round(request.amount, 2),
         "used": False,
         "expires_at": {"$gt": datetime.utcnow()}
     })

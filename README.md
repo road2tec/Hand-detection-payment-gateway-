@@ -82,22 +82,6 @@ npm run dev
 
 ---
 
-## 🎓 Viva Questions & Explanations
-
-### Q1: Why did you implement a Multi-Step Wizard?
-**Answer**: In high-security banking systems, context is key. A wizard-based approach ensures that users verify the recipient *before* exposing their biometric data. It prevents "accidental" payments and builds trust by showing exactly what is being authorized at each step.
-
-### Q2: How does the system handle Privacy (Data Masking)?
-**Answer**: To comply with financial regulations (like GDPR/PCI-DSS), sensitive data like full account numbers are never displayed. We use a masking utility that redacts everything except the last 4 digits. Even the Admin can only see masked data to prevent internal fraud.
-
-### Q3: What is "Hand Scale" validation?
-**Answer**: Our system measures the distance between the wrist and fingers in normalized units. If the hand is too far or too close, the "Hand Size" logic rejects the frame. This ensures the biometric features are extracted at a consistent resolution, significantly reducing "False Rejection" rates.
-
-### Q4: Why use a 3D Biometric HUD?
-**Answer**: The 3D HUD (Heads-Up Display) in the dashboard isn't just aesthetic. It visualizes the biometric scanning process, giving the user confidence that the "Neural Engine" is actively analyzing their skeletal structure. It creates a premium, high-tech experience suitable for a production-grade system.
-
----
-
 ## 📂 Project Structure
 *   `backend/app/biometric`: Neural Core (Detector, Extractor, Matcher).
 *   `backend/app/payment`: Financial Logic, Tiered MFA, and Razorpay Sync.

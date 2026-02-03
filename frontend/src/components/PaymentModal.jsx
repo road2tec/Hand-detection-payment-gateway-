@@ -149,8 +149,13 @@ const PaymentModal = ({ isOpen, onClose, amount: initialAmount, onSuccess }) => 
         setIsVerifyingOTP(true);
         setError(null);
         try {
-            await paymentService.verifyOTP({ otp, amount });
-            if (lastImage) handleCaptureComplete([lastImage]);
+            await paymentService.verifyOTP({ otp, amount: parseFloat(amount) });
+            if (lastImageRef.current) {
+                await handleCaptureComplete([lastImageRef.current]);
+            } else {
+                setError("Biometric cache lost. Please retry.");
+                setStep('error');
+            }
         } catch (err) {
             setError(err.response?.data?.detail || "OTP verification failed.");
         } finally {

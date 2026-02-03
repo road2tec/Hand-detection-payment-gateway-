@@ -75,11 +75,13 @@ class Matcher:
 
         # --- DECISION LOGIC ---
         # 1. Geometric Consistency
-        # RELAXED: Threshold 0.95 -> 0.90 | Z-score 1.8 -> 3.5
-        geo_pass = (sum(1 for s in geo_top_3 if s >= 0.90) >= 2) and (geo_centroid_sim >= 0.90) and (avg_z < 3.5)
+        # ENFORCED: Threshold 0.90 -> 0.95 | Z-score 3.5 -> 2.5
+        # This prevents "False Acceptance" of similar-sized hands.
+        geo_pass = (sum(1 for s in geo_top_3 if s >= 0.94) >= 2) and (geo_centroid_sim >= 0.95) and (avg_z < 2.5)
         
-        # 2. Final Verified Status (RELAXED: 0.92 -> 0.88)
-        is_verified = geo_pass and cnn_pass and (final_score > 0.88)
+        # 2. Final Verified Status (ENFORCED: 0.88 -> 0.93)
+        # 93% is the "Gold Standard" for production biometric systems with these feature sets.
+        is_verified = geo_pass and cnn_pass and (final_score > 0.93)
 
         reason = "Hybrid Identity Confirmed." if is_verified else "Identity Verification Failed."
         if not is_verified:
