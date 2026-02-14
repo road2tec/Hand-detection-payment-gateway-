@@ -29,7 +29,7 @@ This is a production-grade biometric authentication system designed to secure hi
 
 ## 🛠️ Technology Stack
 *   **Frontend**: React.js, Framer Motion (HUD Animations), Lucide Icons, Tailwind CSS.
-*   **Backend**: FastAPI (Async Python), MongoDB (Motor), MediaPipe (Hand Detection), PyTorch (CNN Features).
+*   **Backend**: FastAPI (Async Python), MongoDB (Local + Compass), MediaPipe (Hand Detection), PyTorch (CNN Features).
 *   **Services**: Razorpay (Payment Gateway), Gmail SMTP (OTP Delivery).
 
 ---
@@ -39,32 +39,53 @@ This is a production-grade biometric authentication system designed to secure hi
 ### 1. Requirements
 *   Python 3.10+
 *   Node.js 18+
-*   MongoDB Atlas (or local)
+*   **MongoDB Compass & Community Server** (Required for Database)
 
-### 2. Backend Setup
+### 2. Database Setup (MongoDB Compass)
+1.  Download & Install **MongoDB Community Server** from [mongodb.com](https://www.mongodb.com/try/download/community).
+2.  Install **MongoDB Compass** (GUI).
+3.  Open Compass and connect to: `mongodb://localhost:27017`
+4.  Create a new database named: `hand_biometrics_db`
+
+### 3. Backend Setup
 ```bash
 cd backend
 python -m venv venv
-# Activate venv: venv\Scripts\activate
+# Activate venv:
+# Windows: venv\Scripts\activate
+# Mac/Linux: source venv/bin/activate
+
 pip install -r requirements.txt
-python seed_admin.py  # Create default high-security admin
+
+# Initial Admin Setup
+python seed_admin.py
 ```
 
-### 3. Frontend Setup
+### 4. Frontend Setup
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### 4. Environment Configuration (`.env`)
+### 5. Environment Configuration (`.env`)
+Create a `.env` file in the root directory:
 ```env
-MONGODB_URL=your_mongodb_connection_string
-SECRET_KEY=your_jwt_secret
-RAZORPAY_KEY_ID=your_razorpay_key
-RAZORPAY_KEY_SECRET=your_razorpay_secret
-EMAIL_USER=your_smtp_email
-EMAIL_PASS=your_smtp_app_password
+# Local MongoDB Connection
+MONGODB_URL=mongodb://localhost:27017/hand_biometrics_db
+
+# Security & Secrets
+SECRET_KEY=your_super_secret_key_here
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+# Razorpay (Test Mode)
+RAZORPAY_KEY_ID=rzp_test_RzISTxVyZ1l3Pr
+RAZORPAY_KEY_SECRET=eIco6L2xvGHf2H32RuKhG20G
+
+# Email (SMTP)
+EMAIL_USER=secure.transaction.pay@gmail.com
+EMAIL_PASS=sixkghdmihsooiwv
 ```
 
 ---
@@ -81,6 +102,17 @@ EMAIL_PASS=your_smtp_app_password
 *   `src/components/PaymentModal.jsx`: The 5-step interactive payment wizard.
 *   `src/pages/Dashboard.jsx`: The premium user interface with 3D HUD visuals.
 *   `src/services/api.js`: All authenticated service calls to the backend.
+
+---
+
+## 🎓 Viva & Evaluation Quick-Reference
+
+*   **How does the system distinguish different hands?**
+    It calculates the ratios of 51 distinct skeletal points. Even if two hands have similar lengths, the "joint-to-wrist" ratio and "inter-finger angles" are unique to every individual.
+*   **Why use a Hybrid (CNN + Geometry) model?**
+    Geometry measures bone structure, while CNN measures texture. A spoof (like a prosthetic hand) might match geometry but will fail the CNN texture analysis.
+*   **What happens if the scan is poor?**
+    The system includes **Intelligent Diagnostics**. It warns the user if lighting is too low, the hand is too far, or the image is blurry, preventing unnecessary re-registrations.
 
 ---
 

@@ -11,7 +11,7 @@ from backend.app.utils.security import get_password_hash
 
 async def seed_admin():
     print("🚀 Seeding Default Admin User...")
-    
+         
     admin_email = "admin@biometricpay.com"
     
     # Check if admin exists
