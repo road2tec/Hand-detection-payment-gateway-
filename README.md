@@ -59,6 +59,9 @@ pip install -r requirements.txt
 
 # Initial Admin Setup
 python seed_admin.py
+
+# 🚀 START BACKEND SERVER
+python -m uvicorn backend.app.main:app --port 8000 --reload
 ```
 
 ### 4. Frontend Setup
