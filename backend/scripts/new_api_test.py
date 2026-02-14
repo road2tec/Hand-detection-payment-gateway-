@@ -1,4 +1,4 @@
-import asyncio.proactor_events
+import sklearn.metrics._pairwise_distances_reduction
 import asyncio.proactor_events
 import mediapipe as mp
 from mediapipe.tasks import python
